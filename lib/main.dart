@@ -163,6 +163,7 @@ class _ZikrListState extends State<ZikrList> {
               });
             },
             // trailing: Row(
+            // trailing: Row(
             //   mainAxisSize: MainAxisSize.min,
             //   children: [
             //     IconButton(
