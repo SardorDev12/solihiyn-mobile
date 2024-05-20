@@ -11,3 +11,75 @@ GeneratedPluginRegistrant.java
 key.properties
 **/*.keystore
 **/*.jks
+
+
+# IDE and editor files
+.vscode/
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Flutter/Dart-specific files
+**/build/
+**/ios/Flutter/.last_build_id
+**/ios/Flutter/App.framework/
+**/ios/Flutter/Flutter.framework/
+**/ios/Flutter/ephemeral/
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/Pods/
+**/ios/.generated/
+
+# Android-specific files
+**/android/.gradle/
+**/android/build/
+**/android/app/build/
+
+# macOS-specific files
+**/macos/Flutter/Flutter.framework/
+
+# Linux-specific files
+**/linux/flutter_module/host/linux/flutter-patched-sdk/
+**/linux/flutter_module/linux/flutter-patched-sdk/
+
+# Windows-specific files
+**/windows/flutter_module/.dart_tool/
+**/windows/flutter_module/flutter/flutter_windows.dll
+**/windows/flutter_module/flutter/flutter_export.h
+**/windows/flutter_module/flutter/flutter_plugin_registrar.cc
+**/windows/flutter_module/flutter/flutter_plugin_registrar.h
+**/windows/flutter_module/flutter/flutter_windows.dll
+**/windows/flutter_module/flutter/flutter_windows.h
+**/windows/flutter_module/flutter/flutter_windows.cc
+**/windows/flutter_module/flutter/flutter_windows.def
+**/windows/flutter_module/flutter/flutter_windows.vcxproj
+**/windows/flutter_module/flutter/flutter_windows.vcxproj.filters
+**/windows/flutter_module/flutter/flutter_windows.gypi
+**/windows/flutter_module/flutter/flutter_windows.props
+**/windows/flutter_module/flutter/flutter_windows.vcxproj.user
+**/windows/flutter_module/flutter/third_party/
+
+# Xcode configuration files
+**/*.xcworkspace/
+**/*.pbxproj
+**/*.mode1v3
+**/*.mode2v3
+**/*.perspectivev3
+**/*.xcuserstate
+
+# Gradle files
+**/*.lock
+**/*.backup
+**/gradle-wrapper.jar
+**/gradlew
+**/gradlew.bat
+**/local.properties
+
+# Miscellaneous
+.DS_Store
+.pub-cache/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub/
+.packages
+.idea
