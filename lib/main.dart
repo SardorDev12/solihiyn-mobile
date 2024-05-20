@@ -81,10 +81,12 @@ class _ZikrListState extends State<ZikrList> {
     await saveZikrs();
   }
 
-  Future<void> updateZikr(int index, String newTitle, int newCount) async {
+  Future<void> updateZikr(int index, String newTitle, int newCount, int newLimit, String newCategory) async {
     setState(() {
       zikrs[index].title = newTitle;
       zikrs[index].count = newCount;
+      zikrs[index].limit = newLimit;
+      zikrs[index].category = newCategory;
     });
     await saveZikrs();
   }
@@ -96,11 +98,87 @@ class _ZikrListState extends State<ZikrList> {
     await saveZikrs();
   }
 
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Zikr List'),
+      ),
+      body: ListView.builder(
+        itemCount: zikrs.length,
+        itemBuilder: (context, index) {
+          return Container(
+            margin: EdgeInsets.symmetric(horizontal: 5, vertical: 3),
+            decoration: BoxDecoration(
+              color: Colors.lightGreen[100],
+              borderRadius: BorderRadius.circular(8), // Optional: Add border radius for rounded corners
+            ),// Set the background color here
+            child: ListTile(
+
+              title: Text(zikrs[index].title),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(zikrs[index].category),
+                  Text('${zikrs[index].count} / ${zikrs[index].limit}'),
+                ],
+              ),
+              onTap: () {
+                setState(() {
+                  if (zikrs[index].count < zikrs[index].limit) {
+                    zikrs[index].count += 1;
+                  } else {
+                    zikrs[index].count = 1; // Reset count to 1 if it reaches the limit
+                  }
+                });
+              },
+              trailing: SizedBox(
+                height: double.infinity, // Ensure the IconPopupMenu takes the full height of the ListTile
+                child: Stack(
+                  children: [
+                    IconPopupMenu(
+                      onAddPressed: () => updateZikr(
+                          index, zikrs[index].title, zikrs[index].count + 1, zikrs[index].limit, zikrs[index].category),
+                      onEditPressed: () => showEditDialog(context, index),
+                      onDeletePressed: () => deleteZikr(index),
+                    ),
+                    const Positioned(
+                      top: -5,
+                      bottom: 0,
+                      right: 0,
+                      child: SizedBox(width: 48), // Adjust the width to create space for the IconPopupMenu
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+
+
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) => AddZikrPage(onAdd: addZikrLocally)),
+          );
+        },
+        child: Icon(Icons.add),
+      ),
+    );
+  }
+
   void showEditDialog(BuildContext context, int index) {
     TextEditingController titleController =
         TextEditingController(text: zikrs[index].title);
     TextEditingController countController =
         TextEditingController(text: zikrs[index].count.toString());
+    TextEditingController limitController =
+        TextEditingController(text: zikrs[index].limit.toString());
+    TextEditingController categoryController =
+        TextEditingController(text: zikrs[index].category.toString());
     showDialog(
       context: context,
       builder: (context) {
@@ -118,6 +196,15 @@ class _ZikrListState extends State<ZikrList> {
                 decoration: InputDecoration(labelText: 'Zikr Count'),
                 keyboardType: TextInputType.number,
               ),
+              TextField(
+                controller: limitController,
+                decoration: InputDecoration(labelText: 'Zikr Limit'),
+                keyboardType: TextInputType.number,
+              ),
+              TextField(
+                controller: categoryController,
+                decoration: InputDecoration(labelText: 'Zikr Category'),
+              ),
             ],
           ),
           actions: <Widget>[
@@ -127,8 +214,12 @@ class _ZikrListState extends State<ZikrList> {
             ),
             TextButton(
               onPressed: () {
-                updateZikr(index, titleController.text,
-                    int.parse(countController.text));
+                updateZikr(
+                    index, titleController.text,
+                    int.parse(countController.text),
+                    int.parse(limitController.text),
+                    categoryController.text
+                );
                 Navigator.of(context).pop();
               },
               child: Text('Update'),
@@ -136,64 +227,6 @@ class _ZikrListState extends State<ZikrList> {
           ],
         );
       },
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Zikr List'),
-      ),
-      body: ListView.builder(
-        itemCount: zikrs.length,
-        itemBuilder: (context, index) {
-          return ListTile(
-            title: Text(zikrs[index].title),
-            subtitle: Text('Count: ${zikrs[index].count}'),
-            trailing: IconPopupMenu(
-              onAddPressed: () => updateZikr(
-                  index, zikrs[index].title, zikrs[index].count + 1),
-              onEditPressed: () => showEditDialog(context, index),
-              onDeletePressed: () => deleteZikr(index),
-            ),
-            onTap: () {
-              setState(() {
-                zikrs[index].count += 1;
-              });
-            },
-            // trailing: Row(
-            // trailing: Row(
-            //   mainAxisSize: MainAxisSize.min,
-            //   children: [
-            //     IconButton(
-            //       icon: Icon(Icons.add),
-            //       onPressed: () => updateZikr(
-            //           index, zikrs[index].title, zikrs[index].count + 1),
-            //     ),
-            //     IconButton(
-            //       icon: Icon(Icons.edit),
-            //       onPressed: () => showEditDialog(context, index),
-            //     ),
-            //     IconButton(
-            //       icon: Icon(Icons.delete),
-            //       onPressed: () => deleteZikr(index),
-            //     ),
-            //   ],
-            // ),
-          );
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-                builder: (context) => AddZikrPage(onAdd: addZikrLocally)),
-          );
-        },
-        child: Icon(Icons.add),
-      ),
     );
   }
 }
@@ -229,10 +262,7 @@ class _IconPopupMenuState extends State<IconPopupMenu> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        IconButton(
-          icon: Icon(Icons.more_vert),
-          onPressed: _toggleIconsVisibility,
-        ),
+
         Visibility(
           visible: _showIcons,
           child: Row(
@@ -254,6 +284,10 @@ class _IconPopupMenuState extends State<IconPopupMenu> {
               ),
             ],
           ),
+        ),
+        IconButton(
+          icon: Icon(Icons.more_vert),
+          onPressed: _toggleIconsVisibility,
         ),
       ],
     );
@@ -293,9 +327,15 @@ class AddZikrPage extends StatelessWidget {
             ),TextField(
               decoration: InputDecoration(labelText: 'Zikr Meaning'),
               onChanged: (value) => zikrMeaning = value,
-            ),TextField(
+            ),
+            TextField(
               decoration: InputDecoration(labelText: 'Zikr Limit'),
-              onChanged: (value) => zikrLimit = value as int,
+              onChanged: (value) {
+                int? parsedLimit = int.tryParse(value);
+                if (parsedLimit != null) {
+                    zikrLimit = parsedLimit;
+                }
+              },
             ),
             SizedBox(height: 20),
             ElevatedButton(
