@@ -22,7 +22,7 @@ class MyApp extends StatelessWidget {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const MaterialApp(
             home: Scaffold(
-              body: Center(child: Text("Solihiyn Zikrs"),
+              body: Center(child: Text("Solihiyn Zikrs",style: TextStyle(fontSize: 16),),
             ),
           ),);
         } else if (snapshot.connectionState == ConnectionState.done) {
