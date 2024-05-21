@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   runApp(const MyApp());
@@ -9,19 +11,92 @@ void main() {
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color.fromARGB(255, 151, 136, 117)),
-        useMaterial3: true,
-      ),
-      home: const ZikrList(),
+    return FutureBuilder(
+      future: SharedPreferences.getInstance(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return MaterialApp(
+            home: Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            ),
+          );
+        } else if (snapshot.connectionState == ConnectionState.done) {
+          return ChangeNotifierProvider<ThemeNotifier>(
+            create: (_) => ThemeNotifier().._loadFromPrefs(),
+            child: Consumer<ThemeNotifier>(
+              builder: (context, theme, child) {
+                return MaterialApp(
+                  title: 'Flutter',
+                  theme: theme.getTheme(),
+                  home: const ZikrList(),
+                );
+              },
+            ),
+          );
+        } else {
+          return MaterialApp(
+            home: Scaffold(
+              body: Center(child: Text('Error loading preferences')),
+            ),
+          );
+        }
+      },
     );
   }
 }
+
+class ThemeNotifier extends ChangeNotifier {
+  ThemeData _currentTheme = lightTheme;
+  SharedPreferences? _prefs;
+  bool _isLoaded = false;
+
+  ThemeNotifier() {
+    _loadFromPrefs();
+  }
+
+  ThemeData getTheme() => _currentTheme;
+  bool get isLoaded => _isLoaded;
+
+  Future<void> _initPrefs() async {
+    _prefs = await SharedPreferences.getInstance();
+  }
+
+  Future<void> _loadFromPrefs() async {
+    await _initPrefs();
+    final isDarkMode = _prefs?.getBool('isDarkMode') ?? false;
+    _currentTheme = isDarkMode ? darkTheme : lightTheme;
+    _isLoaded = true;
+    notifyListeners();
+  }
+
+  Future<void> _saveToPrefs() async {
+    await _initPrefs();
+    _prefs?.setBool('isDarkMode', _currentTheme == darkTheme);
+  }
+
+  void toggleTheme() {
+    _currentTheme = _currentTheme == darkTheme ? lightTheme : darkTheme;
+    _saveToPrefs();
+    notifyListeners();
+  }
+}
+
+final lightTheme = ThemeData(
+  brightness: Brightness.light,
+  colorScheme: ColorScheme.light(
+    primary: const Color.fromARGB(255, 151, 136, 117),
+  ),
+);
+
+final darkTheme = ThemeData(
+  brightness: Brightness.dark,
+  colorScheme: ColorScheme.dark(
+    primary: const Color.fromARGB(255, 255, 255, 255),
+  ),
+);
 
 class ZikrList extends StatefulWidget {
   const ZikrList({super.key});
@@ -39,7 +114,6 @@ class _ZikrListState extends State<ZikrList> {
     loadZikrs();
   }
 
-  // File handling methods
   Future<String> get _localPath async {
     final directory = await getApplicationDocumentsDirectory();
     return directory.path;
@@ -47,7 +121,6 @@ class _ZikrListState extends State<ZikrList> {
 
   Future<File> get _localFile async {
     final path = await _localPath;
-    print('File path: $path/zikrs.json'); // Debugging print
     return File('$path/zikrs.json');
   }
 
@@ -55,20 +128,17 @@ class _ZikrListState extends State<ZikrList> {
     try {
       final file = await _localFile;
       if (await file.exists()) {
-        // Read the file
         final contents = await file.readAsString();
         final jsonResponse = jsonDecode(contents) as List;
         setState(() {
           zikrs = jsonResponse.map((data) => Zikr.fromJson(data)).toList();
         });
       } else {
-        print('File does not exist');
         setState(() {
           zikrs = [];
         });
       }
     } catch (e) {
-      print('Error reading file: $e');
       setState(() {
         zikrs = [];
       });
@@ -77,11 +147,9 @@ class _ZikrListState extends State<ZikrList> {
 
   Future<File> saveZikrs() async {
     final file = await _localFile;
-    // Convert Zikrs to a JSON string and write to the file
     return file.writeAsString(jsonEncode(zikrs.map((zikr) => zikr.toJson()).toList()));
   }
 
-  // Update, Delete and Add methods need to invoke saveZikrs
   Future<void> addZikrLocally(Zikr zikr) async {
     setState(() {
       zikrs.add(zikr);
@@ -111,6 +179,14 @@ class _ZikrListState extends State<ZikrList> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Zikr List'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.brightness_6),
+            onPressed: () {
+              Provider.of<ThemeNotifier>(context, listen: false).toggleTheme();
+            },
+          ),
+        ],
       ),
       body: ListView.builder(
         itemCount: zikrs.length,
@@ -119,8 +195,8 @@ class _ZikrListState extends State<ZikrList> {
             margin: EdgeInsets.symmetric(horizontal: 5, vertical: 3),
             decoration: BoxDecoration(
               color: Colors.lightGreen[100],
-              borderRadius: BorderRadius.circular(8), // Optional: Add border radius for rounded corners
-            ), // Set the background color here
+              borderRadius: BorderRadius.circular(8),
+            ),
             child: ListTile(
               title: Text(zikrs[index].title),
               subtitle: Column(
@@ -135,13 +211,13 @@ class _ZikrListState extends State<ZikrList> {
                   if (zikrs[index].count < zikrs[index].limit) {
                     zikrs[index].count += 1;
                   } else {
-                    zikrs[index].count = 1; // Reset count to 1 if it reaches the limit
+                    zikrs[index].count = 1;
                   }
                 });
-                saveZikrs(); // Save the state whenever a zikr is incremented
+                saveZikrs();
               },
               trailing: SizedBox(
-                height: double.infinity, // Ensure the IconPopupMenu takes the full height of the ListTile
+                height: double.infinity,
                 child: Stack(
                   children: [
                     IconPopupMenu(
@@ -154,7 +230,7 @@ class _ZikrListState extends State<ZikrList> {
                       top: -5,
                       bottom: 0,
                       right: 0,
-                      child: SizedBox(width: 48), // Adjust the width to create space for the IconPopupMenu
+                      child: SizedBox(width: 48),
                     ),
                   ],
                 ),
@@ -167,8 +243,7 @@ class _ZikrListState extends State<ZikrList> {
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(
-                builder: (context) => AddZikrPage(onAdd: addZikrLocally)),
+            MaterialPageRoute(builder: (context) => AddZikrPage(onAdd: addZikrLocally)),
           );
         },
         child: Icon(Icons.add),
@@ -177,14 +252,10 @@ class _ZikrListState extends State<ZikrList> {
   }
 
   void showEditDialog(BuildContext context, int index) {
-    TextEditingController titleController =
-    TextEditingController(text: zikrs[index].title);
-    TextEditingController countController =
-    TextEditingController(text: zikrs[index].count.toString());
-    TextEditingController limitController =
-    TextEditingController(text: zikrs[index].limit.toString());
-    TextEditingController categoryController =
-    TextEditingController(text: zikrs[index].category.toString());
+    TextEditingController titleController = TextEditingController(text: zikrs[index].title);
+    TextEditingController countController = TextEditingController(text: zikrs[index].count.toString());
+    TextEditingController limitController = TextEditingController(text: zikrs[index].limit.toString());
+    TextEditingController categoryController = TextEditingController(text: zikrs[index].category.toString());
     showDialog(
       context: context,
       builder: (context) {
@@ -268,99 +339,30 @@ class _IconPopupMenuState extends State<IconPopupMenu> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Visibility(
-          visible: _showIcons,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              IconButton(
-                icon: Icon(Icons.edit),
-                onPressed: () {
-                  widget.onEditPressed();
-                  _toggleIconsVisibility();
-                },
-              ),
-              IconButton(
-                icon: Icon(Icons.delete),
-                onPressed: () {
-                  widget.onDeletePressed();
-                  _toggleIconsVisibility();
-                },
-              ),
-            ],
-          ),
-        ),
         IconButton(
           icon: Icon(Icons.more_vert),
           onPressed: _toggleIconsVisibility,
         ),
-      ],
-    );
-  }
-}
-
-// #########################
-
-class AddZikrPage extends StatelessWidget {
-  final Function(Zikr) onAdd;
-
-  AddZikrPage({required this.onAdd});
-
-  @override
-  Widget build(BuildContext context) {
-    String zikrTitle = '';
-    String zikrCategory = '';
-    String zikrMeaning = '';
-    int zikrLimit = 0;
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Add Zikr'),
-      ),
-      body: Padding(
-        padding: EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextField(
-              decoration: InputDecoration(labelText: 'Zikr Title'),
-              onChanged: (value) => zikrTitle = value,
-            ),
-            TextField(
-              decoration: InputDecoration(labelText: 'Zikr Category'),
-              onChanged: (value) => zikrCategory = value,
-            ),
-            TextField(
-              decoration: InputDecoration(labelText: 'Zikr Meaning'),
-              onChanged: (value) => zikrMeaning = value,
-            ),
-            TextField(
-              decoration: InputDecoration(labelText: 'Zikr Limit'),
-              onChanged: (value) {
-                int? parsedLimit = int.tryParse(value);
-                if (parsedLimit != null) {
-                  zikrLimit = parsedLimit;
-                }
-              },
-            ),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                if (zikrTitle.isNotEmpty) {
-                  onAdd(Zikr(
-                      title: zikrTitle,
-                      count: 0,
-                      meaning: zikrMeaning,
-                      category: zikrCategory,
-                      limit: zikrLimit));
-                  Navigator.pop(context);
-                }
-              },
-              child: Text('Add Zikr'),
-            ),
-          ],
+        Visibility(
+          visible: _showIcons,
+          child: Row(
+            children: [
+              IconButton(
+                icon: Icon(Icons.add),
+                onPressed: widget.onAddPressed,
+              ),
+              IconButton(
+                icon: Icon(Icons.edit),
+                onPressed: widget.onEditPressed,
+              ),
+              IconButton(
+                icon: Icon(Icons.delete),
+                onPressed: widget.onDeletePressed,
+              ),
+            ],
+          ),
         ),
-      ),
+      ],
     );
   }
 }
@@ -368,34 +370,84 @@ class AddZikrPage extends StatelessWidget {
 class Zikr {
   String title;
   int count;
-  String meaning;
-  String category;
   int limit;
+  String category;
 
-  Zikr(
-      {required this.title,
-        required this.count,
-        required this.meaning,
-        required this.category,
-        required this.limit});
-
-  Map<String, dynamic> toJson() {
-    return {
-      'title': title,
-      'count': count,
-      'meaning': meaning,
-      'category': category,
-      'limit': limit,
-    };
-  }
+  Zikr({required this.title, this.count = 0, this.limit = 100, this.category = ''});
 
   factory Zikr.fromJson(Map<String, dynamic> json) {
     return Zikr(
       title: json['title'],
       count: json['count'],
-      meaning: json['meaning'],
-      category: json['category'],
       limit: json['limit'],
+      category: json['category'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'title': title,
+      'count': count,
+      'limit': limit,
+      'category': category,
+    };
+  }
+}
+
+class AddZikrPage extends StatelessWidget {
+  final Future<void> Function(Zikr zikr) onAdd;
+
+  AddZikrPage({super.key, required this.onAdd});
+
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _countController = TextEditingController();
+  final TextEditingController _limitController = TextEditingController();
+  final TextEditingController _categoryController = TextEditingController();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Add Zikr'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: <Widget>[
+            TextField(
+              controller: _titleController,
+              decoration: InputDecoration(labelText: 'Zikr Title'),
+            ),
+            TextField(
+              controller: _countController,
+              decoration: InputDecoration(labelText: 'Zikr Count'),
+              keyboardType: TextInputType.number,
+            ),
+            TextField(
+              controller: _limitController,
+              decoration: InputDecoration(labelText: 'Zikr Limit'),
+              keyboardType: TextInputType.number,
+            ),
+            TextField(
+              controller: _categoryController,
+              decoration: InputDecoration(labelText: 'Zikr Category'),
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                final title = _titleController.text;
+                final count = int.parse(_countController.text);
+                final limit = int.parse(_limitController.text);
+                final category = _categoryController.text;
+                final newZikr = Zikr(title: title, count: count, limit: limit, category: category);
+                onAdd(newZikr);
+                Navigator.pop(context);
+              },
+              child: Text('Add Zikrs'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
