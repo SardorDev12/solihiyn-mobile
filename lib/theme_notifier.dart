@@ -23,6 +23,10 @@ class ThemeNotifier extends ChangeNotifier {
     _currentTheme = isDarkMode ? darkTheme : lightTheme;
     _isLoaded = true;
     notifyListeners();
+
+    if (!isDarkMode) {
+      toggleTheme();
+    }
   }
 
   Future<void> saveToPrefs() async {
