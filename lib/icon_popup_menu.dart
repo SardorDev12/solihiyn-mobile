@@ -1,22 +1,24 @@
 import 'package:flutter/material.dart';
 
 class IconPopupMenu extends StatefulWidget {
-  // final VoidCallback onAddPressed;
   final VoidCallback onEditPressed;
   final VoidCallback onDeletePressed;
+  final VoidCallback onRedoPressed;
+
 
   const IconPopupMenu({
     super.key,
     // required this.onAddPressed,
     required this.onEditPressed,
     required this.onDeletePressed,
+    required this.onRedoPressed,
   });
 
   @override
-  _IconPopupMenuState createState() => _IconPopupMenuState();
+  IconPopupMenuState createState() => IconPopupMenuState();
 }
 
-class _IconPopupMenuState extends State<IconPopupMenu> {
+class IconPopupMenuState extends State<IconPopupMenu> {
   bool _showIcons = false;
 
   void _toggleIconsVisibility() {

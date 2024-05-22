@@ -12,28 +12,13 @@ class ZikrList extends StatefulWidget {
   const ZikrList({super.key});
 
   @override
-  _ZikrListState createState() => _ZikrListState();
+  ZikrListState createState() => ZikrListState();
 }
 
-class _ZikrListState extends State<ZikrList> {
-  int _selectedIndex = 0;
+class ZikrListState extends State<ZikrList> {
   List<Zikr> zikrs = [];
   bool isAscending = true;
   Color? _containerColor;
-
-  void _onItemTapped(int index) {
-    if(index == 1){
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-            builder: (context) =>
-                AddZikrPage(onAdd: addZikrLocally)),
-      );
-    }
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
 
   @override
   void initState() {
@@ -53,6 +38,33 @@ class _ZikrListState extends State<ZikrList> {
   }
 
   Future<void> loadZikrs() async {
+
+    final defaultZikr = [Zikr(
+      title: 'Subhanalloh',
+      count: 0,
+      limit: 33,
+      category: 'Namozdan keyingi zikrlar',
+      isFavourite: false,
+      isDone: false,
+    ),
+   Zikr(
+      title: 'Allohu Akbar',
+      count: 0,
+      limit: 33,
+      category: 'Namozdan keyingi zikrlar',
+      isFavourite: false,
+      isDone: false,
+    ),
+    Zikr(
+      title: 'Assalamu Alaykum',
+      count: 0,
+      limit: 33,
+      category: 'Namozdan keyingi zikrlar',
+      isFavourite: false,
+      isDone: false,
+    )];
+
+
     try {
       final file = await _localFile;
       if (await file.exists()) {
@@ -63,7 +75,7 @@ class _ZikrListState extends State<ZikrList> {
         });
       } else {
         setState(() {
-          zikrs = [];
+          zikrs = [...defaultZikr];
         });
       }
     } catch (e) {
@@ -102,9 +114,29 @@ class _ZikrListState extends State<ZikrList> {
     await saveZikrs();
   }
 
+  Future<void> redo(int index) async {
+    setState(() {
+      zikrs[index].isDone = false;
+    });
+    await saveZikrs();
+  }
+
+  Future<void> increment(int index) async {
+    setState(() {
+      if (zikrs[index].count < zikrs[index].limit - 1 && !zikrs[index].isDone) {
+        zikrs[index].count += 1;
+      } else {
+        zikrs[index].count = -1;
+        zikrs[index].isDone = true;
+
+      }
+    });
+    await saveZikrs();
+  }
+
   void toggleSortOrder() {
     setState(() {
-      isAscending = !isAscending; // Toggle sorting order
+      isAscending = !isAscending;
       zikrs.sort((a, b) => isAscending ? a.category.compareTo(b.category) : b.category.compareTo(a.category));
     });
   }
@@ -141,7 +173,6 @@ class _ZikrListState extends State<ZikrList> {
         ],
       ),
       body: ListView.builder(
-
         itemCount: zikrs.length,
         itemBuilder: (context, index) {
           return Container(
@@ -150,19 +181,41 @@ class _ZikrListState extends State<ZikrList> {
               color: _containerColor,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: ListTile(
-              title: Text(zikrs[index].category, style: const TextStyle(decoration: TextDecoration.underline)),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            child: Stack(
+              children: [
+                ListTile(
+                   title: Text(zikrs[index].isDone ? "" : zikrs[index].category, style: const TextStyle(decoration: TextDecoration.underline)),
+                    subtitle: Column(crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 5),
-                    child: Text(
-                      zikrs[index].title,
-                      style: const TextStyle(fontSize: 25),
+                    padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 0),
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          zikrs[index].isDone = false;
+                          increment(index);
+                        });
+                      },
+                      child: Text.rich(
+                        TextSpan(
+                          children: [
+                            if(zikrs[index].isDone)
+                            const WidgetSpan(
+                              child: Icon(
+                                Icons.redo_sharp,
+                                size: 22,
+                              ),
+                            ),
+                            TextSpan(
+                              text: zikrs[index].isDone ? " Redo" : zikrs[index].title,
+                              style: const TextStyle(fontSize: 22),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
-                  Text(
+                      ),
+                    Text(zikrs[index].isDone ? "" :
                     '${zikrs[index].count} / ${zikrs[index].limit}',
                     style: const TextStyle(fontSize: 20),
                   ),
@@ -170,34 +223,21 @@ class _ZikrListState extends State<ZikrList> {
               ),
               onTap: () {
                 setState(() {
-                  if (zikrs[index].count < zikrs[index].limit) {
-                    zikrs[index].count += 1;
-                  } else {
-                    zikrs[index].count = 1;
-                  }
-                  if (zikrs[index].count >= zikrs[index].limit) {
-                    zikrs[index].isDone = true;
-                  }
+                  increment(index);
                 });
                 saveZikrs();
               },
-              trailing: SizedBox(
-                height: double.infinity,
-                child: Stack(
-                  children: [
-                    IconPopupMenu(
-                      onEditPressed: () => showEditDialog(context, index),
-                      onDeletePressed: () => deleteZikr(index),
-                    ),
-                    const Positioned(
-                      top: -5,
-                      bottom: 0,
-                      right: 0,
-                      child: SizedBox(width: 48),
-                    ),
-                  ],
                 ),
-              ),
+                Positioned(
+                  top: 0,
+                  right: 0,
+                child: IconPopupMenu(
+                      onEditPressed: () => showEditDialog(context, index),
+                      onDeletePressed: () => deleteZikr(index),onRedoPressed: ()=> redo(index),
+                    ),
+                )
+            ],
+
             ),
           );
         },
@@ -216,28 +256,29 @@ class _ZikrListState extends State<ZikrList> {
         return AlertDialog(
           title: const Text('Edit Zikr'),
           content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              TextField(
-                controller: titleController,
-                decoration: const InputDecoration(labelText: 'Zikr Title'),
-              ),
-              TextField(
-                controller: countController,
-                decoration: const InputDecoration(labelText: 'Zikr Count'),
-                keyboardType: TextInputType.number,
-              ),
-              TextField(
-                controller: limitController,
-                decoration: const InputDecoration(labelText: 'Zikr Limit'),
-                keyboardType: TextInputType.number,
-              ),
-              TextField(
-                controller: categoryController,
-                decoration: const InputDecoration(labelText: 'Zikr Category'),
-              ),
-            ],
-          ),
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+
+                TextField(
+                  controller: titleController,
+                  decoration: const InputDecoration(labelText: 'Zikr Title'),
+                ),
+                TextField(
+                  controller: countController,
+                  decoration: const InputDecoration(labelText: 'Zikr Count'),
+                  keyboardType: TextInputType.number,
+                ),
+                TextField(
+                  controller: limitController,
+                  decoration: const InputDecoration(labelText: 'Zikr Limit'),
+                  keyboardType: TextInputType.number,
+                ),
+                TextField(
+                  controller: categoryController,
+                  decoration: const InputDecoration(labelText: 'Zikr Category'),
+                ),
+              ],
+            ),
           actions: <Widget>[
             TextButton(
               onPressed: () => Navigator.of(context).pop(),

@@ -6,14 +6,14 @@ class Zikr {
   bool isFavourite;
   bool isDone;
 
-  Zikr({required this.title, this.count = 0, this.limit = 100, required this.category, this.isFavourite = false, this.isDone = false});
+  Zikr({required this.title, this.count = 0, required this.limit, this.category = "Daily", this.isFavourite = false, this.isDone = false});
   factory Zikr.fromJson(Map<String, dynamic> json) {
     return Zikr(
       title: json['title'],
       count: json['count'],
       limit: json['limit'],
       category: json['category'],
-      isFavourite: json['isFavourite'],
+      isFavourite: json['isFavourite'] ?? false,
       isDone: json['isDone'] ?? false,
 
     );
