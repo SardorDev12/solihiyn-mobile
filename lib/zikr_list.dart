@@ -48,7 +48,7 @@ class ZikrListState extends State<ZikrList> {
       isDone: false,
     ),
    Zikr(
-      title: 'Allohu Akbar',
+      title: 'Alhamdulillah',
       count: 0,
       limit: 33,
       category: 'Namozdan keyingi zikrlar',
@@ -56,7 +56,7 @@ class ZikrListState extends State<ZikrList> {
       isDone: false,
     ),
     Zikr(
-      title: 'Assalamu Alaykum',
+      title: 'Allohu Akbar',
       count: 0,
       limit: 33,
       category: 'Namozdan keyingi zikrlar',
