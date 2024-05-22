@@ -5,11 +5,11 @@ import 'theme_notifier.dart';
 import 'zikr_list.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(const SolihiynZikrs());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class SolihiynZikrs extends StatelessWidget {
+  const SolihiynZikrs({super.key});
 
   @override
   Widget build(BuildContext context) {
