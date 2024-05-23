@@ -7,6 +7,7 @@ import 'theme_notifier.dart';
 import 'zikr_model.dart';
 import 'add_zikr_page.dart';
 import 'icon_popup_menu.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ZikrList extends StatefulWidget {
   const ZikrList({super.key});
@@ -19,12 +20,27 @@ class ZikrListState extends State<ZikrList> {
   List<Zikr> zikrs = [];
   bool isAscending = true;
   Color? _containerColor;
+  bool showFav = false;
+  late SharedPreferences _prefs;
+  late bool _isFavorite;
 
   @override
   void initState() {
     super.initState();
     _containerColor = Colors.lightGreen[100];
+    _loadPrefs();
     loadZikrs();
+  }
+
+  Future<void> _loadPrefs() async {
+    _prefs = await SharedPreferences.getInstance();
+    _isFavorite = _prefs.getBool('isFavorite') ?? false;
+    setState(() {});
+  }
+
+  Future<void> _savePrefs() async {
+    await _prefs.setBool('isFavorite', _isFavorite);
+
   }
 
   Future<String> get _localPath async {
@@ -128,7 +144,6 @@ class ZikrListState extends State<ZikrList> {
       } else {
         zikrs[index].count = -1;
         zikrs[index].isDone = true;
-
       }
     });
     await saveZikrs();
@@ -137,8 +152,23 @@ class ZikrListState extends State<ZikrList> {
   void toggleSortOrder() {
     setState(() {
       isAscending = !isAscending;
-      zikrs.sort((a, b) => isAscending ? a.category.compareTo(b.category) : b.category.compareTo(a.category));
+      zikrs.sort((a, b) => isAscending ? a.createdTime.compareTo(b.createdTime) : b.createdTime.compareTo(a.createdTime));
     });
+  }
+
+  void _toggleFavoriteFilter() {
+    setState(() {
+      showFav = !showFav;
+      _savePrefs();
+    });
+  }
+
+  Future<void> toggleFavorite(int index) async {
+    setState(() {
+      zikrs[index].isFavourite = !zikrs[index].isFavourite;
+    });
+    await saveZikrs();
+
   }
 
 
@@ -147,13 +177,19 @@ class ZikrListState extends State<ZikrList> {
     _containerColor = Provider.of<ThemeNotifier>(context).getTheme() == darkTheme
         ? Colors.blueAccent[200]
         : Colors.lightGreen[100];
+    List<Zikr> displayedZikrs = showFav ? zikrs.where((zikr) => zikr.isFavourite).toList() : zikrs;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Solihiyn Zikrs'),
         actions: [
+
           IconButton(
-            icon: const Icon(Icons.sort_by_alpha),
+            icon: const Icon(Icons.sort),
             onPressed: toggleSortOrder,
+          ),
+          IconButton(
+            icon: Icon(showFav ? Icons.favorite : Icons.favorite_border),
+            onPressed: _toggleFavoriteFilter,
           ),
           IconButton(
             icon: const Icon(Icons.brightness_6),
@@ -173,7 +209,7 @@ class ZikrListState extends State<ZikrList> {
         ],
       ),
       body: ListView.builder(
-        itemCount: zikrs.length,
+        itemCount: displayedZikrs.length,
         itemBuilder: (context, index) {
           return Container(
             margin: const EdgeInsets.symmetric(horizontal: 15, vertical: 3),
@@ -184,7 +220,10 @@ class ZikrListState extends State<ZikrList> {
             child: Stack(
               children: [
                 ListTile(
-                   title: Text(zikrs[index].isDone ? "" : zikrs[index].category, style: const TextStyle(decoration: TextDecoration.underline)),
+                  title: Text(
+                    displayedZikrs[index].isDone ? "" : displayedZikrs[index].category,
+                    style: const TextStyle(decoration: TextDecoration.underline),
+                  ),
                     subtitle: Column(crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Padding(
@@ -192,14 +231,14 @@ class ZikrListState extends State<ZikrList> {
                     child: GestureDetector(
                       onTap: () {
                         setState(() {
-                          zikrs[index].isDone = false;
+                          displayedZikrs[index].isDone = false;
                           increment(index);
                         });
                       },
                       child: Text.rich(
                         TextSpan(
                           children: [
-                            if(zikrs[index].isDone)
+                            if(displayedZikrs[index].isDone)
                             const WidgetSpan(
                               child: Icon(
                                 Icons.redo_sharp,
@@ -207,7 +246,7 @@ class ZikrListState extends State<ZikrList> {
                               ),
                             ),
                             TextSpan(
-                              text: zikrs[index].isDone ? " Redo" : zikrs[index].title,
+                              text: displayedZikrs[index].isDone ? " Redo" : displayedZikrs[index].title,
                               style: const TextStyle(fontSize: 22),
                             ),
                           ],
@@ -215,8 +254,8 @@ class ZikrListState extends State<ZikrList> {
                       ),
                     ),
                       ),
-                    Text(zikrs[index].isDone ? "" :
-                    '${zikrs[index].count} / ${zikrs[index].limit}',
+                    Text(displayedZikrs[index].isDone ? "" :
+                    '${displayedZikrs[index].count} / ${displayedZikrs[index].limit}',
                     style: const TextStyle(fontSize: 20),
                   ),
                 ],
@@ -234,6 +273,8 @@ class ZikrListState extends State<ZikrList> {
                 child: IconPopupMenu(
                       onEditPressed: () => showEditDialog(context, index),
                       onDeletePressed: () => deleteZikr(index),onRedoPressed: ()=> redo(index),
+                      onFavoritePressed: () => toggleFavorite(index), // Add this line
+                      isFavorite: displayedZikrs[index].isFavourite,
                     ),
                 )
             ],

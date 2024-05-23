@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 class Zikr {
   String title;
   int count;
@@ -5,9 +7,10 @@ class Zikr {
   String category;
   bool isFavourite;
   bool isDone;
+  DateTime createdTime;
 
-  Zikr({required this.title, this.count = 0, required this.limit, this.category = "Daily", this.isFavourite = false, this.isDone = false});
-  factory Zikr.fromJson(Map<String, dynamic> json) {
+  Zikr({required this.title, this.count = 0, required this.limit, this.category = "Daily", this.isFavourite = false, this.isDone = false, DateTime? createdTime,}) : createdTime = createdTime = createdTime ?? DateTime.now();
+   factory Zikr.fromJson(Map<String, dynamic> json) {
     return Zikr(
       title: json['title'],
       count: json['count'],
@@ -15,7 +18,7 @@ class Zikr {
       category: json['category'],
       isFavourite: json['isFavourite'] ?? false,
       isDone: json['isDone'] ?? false,
-
+      createdTime: DateTime.parse(json['createdTime']),
     );
   }
 
@@ -27,6 +30,7 @@ class Zikr {
       'category': category,
       'isFavourite': isFavourite,
       'isDone': isDone,
+      'createdTime': createdTime.toIso8601String(),
     };
   }
 }
