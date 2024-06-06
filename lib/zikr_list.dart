@@ -137,6 +137,14 @@ class ZikrListState extends State<ZikrList> {
     await saveZikrs();
   }
 
+  Future<void> resetZikrCount(int index) async{
+    setState(() {
+      zikrs[index].count = 0;
+      zikrs[index].isDone = false;
+    });
+    await saveZikrs();
+  }
+
   Future<void> increment(int index) async {
     setState(() {
       if (zikrs[index].count < zikrs[index].limit - 1 && !zikrs[index].isDone) {
@@ -271,6 +279,7 @@ class ZikrListState extends State<ZikrList> {
                   top: 0,
                   right: 0,
                 child: IconPopupMenu(
+                      onResetZikrCount: () => resetZikrCount(index),
                       onEditPressed: () => showEditDialog(context, index),
                       onDeletePressed: () => deleteZikr(index),onRedoPressed: ()=> redo(index),
                       onFavoritePressed: () => toggleFavorite(index), // Add this line

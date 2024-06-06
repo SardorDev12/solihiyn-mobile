@@ -42,6 +42,9 @@ class AddZikrPageState extends State<AddZikrPage> {
     if (_submitted && (value == null || value.isEmpty)) {
       return 'Please enter a Zikr category';
     }
+    if(_submitted && (value != null && value.length > 25)){
+      return 'Category must be 25 characters or less';
+    }
     return null;
   }
 

@@ -1,8 +1,7 @@
-import 'dart:ffi';
-
 import 'package:flutter/material.dart';
 
 class IconPopupMenu extends StatefulWidget {
+  final VoidCallback onResetZikrCount;
   final VoidCallback onEditPressed;
   final VoidCallback onDeletePressed;
   final VoidCallback onRedoPressed;
@@ -12,6 +11,7 @@ class IconPopupMenu extends StatefulWidget {
 
   const IconPopupMenu({
     super.key,
+    required this.onResetZikrCount,
     required this.onEditPressed,
     required this.onDeletePressed,
     required this.onRedoPressed,
@@ -38,15 +38,31 @@ class IconPopupMenuState extends State<IconPopupMenu> {
       mainAxisSize: MainAxisSize.min,
       children: [
         Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               IconButton(
-                icon: Icon(widget.isFavorite ? Icons.favorite : Icons.favorite_border),
+                icon: const Icon(Icons.refresh),
+                padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(maxWidth: 1),
+
                 onPressed: () {
-                  widget.onFavoritePressed(); // Add this line
+                  widget.onResetZikrCount();
+                }
+              ),
+              IconButton(
+                icon: Icon(widget.isFavorite ? Icons.favorite : Icons.favorite_border),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(maxWidth: 1),
+
+                onPressed: () {
+                  widget.onFavoritePressed();
                 },
               ),
               IconButton(
                 icon: const Icon(Icons.more_vert),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(maxWidth: 1),
                 onPressed: _toggleIconsVisibility,
               ),
             ]
